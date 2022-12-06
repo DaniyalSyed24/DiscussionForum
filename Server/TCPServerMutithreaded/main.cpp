@@ -83,12 +83,19 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 				std::cout << "Post message: " << post.getMessage() << std::endl;
 
 				//Messages.insert(pair<std::string, std::vector<std::string>>());
-
 				//Messages.insert(pair<string, vector<string>>(post.getTopicId(), post.getMessage());
 
-				data.reply = post.getMessage();
-
 				MessagesList.insert(pair<std::string, std::string>(post.getTopicId(), post.getMessage()));
+
+				string topicID = post.getTopicId();
+				int j = 0;
+
+				for (auto i = MessagesList.begin(); i != MessagesList.end(); i++) {
+					if (i->first == topicID) {
+						data.reply = to_string(j);;
+						j++;
+					}
+				}
 
 				server->sendReply(data);
 				continue;
@@ -100,8 +107,8 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 				std::cout << "Read request" << read.toString() << std::endl;
 				std::cout << "Read topic: " << read.getTopicId() << std::endl;
 				std::cout << "Read post id: " << read.getPostId() << std::endl;
-	
-				string topicID = read.getTopicId(); 
+
+				string topicID = read.getTopicId();
 				int i = -1; // so the first is 0.
 				for (auto iterator = MessagesList.begin(); iterator != MessagesList.end(); iterator++) { // iterate through the multimap to find the right ID. Within the ID, find the right message
 					if (iterator->first == topicID) {
