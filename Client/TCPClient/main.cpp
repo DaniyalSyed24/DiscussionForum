@@ -1,13 +1,27 @@
 #include <iostream>
+#include <vector>
+#include <thread>
+#include <ostream>
+
+using namespace std;
 
 #include "TCPClient.h"
+#include <future>
 
 #define DEFAULT_PORT 12345
 
-int main(int argc, char **argv)
+
+
+void randomFunction() {
+	cout << "I just got executed!" << "\n";
+}
+
+
+
+int main(int argc, char **argv, int posters, int readers, int time, int throttle) // added parameters
 {
 	// Validate the parameters
-	if (argc != 6) { // we have 5 parameters -> IP Address, Poster threads, Reader threads, Time and Throttle
+	if (argc != 6) {
 		printf("usage: %s server-name|IP-address|Poster Threads|Reader Threads|Time|Throttle\n", argv[0]);
 		return 1;
 	}
@@ -17,7 +31,37 @@ int main(int argc, char **argv)
 
 	client.OpenConnection();
 
+
+
+	int numberOfPosterThreads = std::stoi(argv[2]);
+	int numberOfReaderThreads = std::stoi(argv[3]);
+	int totalSeconds = std::stoi(argv[4]);
+
+	//create vectors of threads
+	std::vector< std::thread > posterThreadsVector;
+	std::vector< std::thread > readerThreadsVector;
+
+
+	//generate m poster threads and push them in the poster thread vector
+	for (int i = 0; i < numberOfPosterThreads; i++) {
+		posterThreadsVector.push_back(std::thread(randomFunction));
+	}
+
+	//generate n reader threads and push them in the reader thread vector
+	for (int i = 0; i < numberOfReaderThreads; i++) {
+		readerThreadsVector.push_back(std::thread());
+	}
+
+	// TESTING
+	int test = posterThreadsVector.size();
+	int test2 = readerThreadsVector.size();
+
+	std::cout << "number of posters threads " << test << "\n";
+	std::cout << "number of reader threads: " << test2;
+
+
 	do {
+		/*
 		request = "";
 		std::cout << "Enter string to send to server or \"exit\" (without quotes to terminate): ";
 		std::getline(std::cin, request);
@@ -29,51 +73,11 @@ int main(int argc, char **argv)
 
 		std::cout << "String returned: " << reply << std::endl;
 		std::cout << "Bytes received: " << reply.size() << std::endl;
+		*/
+
 	} while (request != "exit" && request != "EXIT");
 
 	client.CloseConnection();
 
 	return 0;
 }
-
-// IMPORTED THREADPOOL CODE
-
-#include <vector>
-#include <chrono>
-#include <string>
-
-#include "ThreadPool.h"
-
-int threadTask(int i)
-{
-	std::string str = "hello " + std::to_string(i) + "\n";
-	std::cout << str;
-	std::this_thread::sleep_for(std::chrono::seconds(3));
-	str = "world " + std::to_string(i) + "\n";
-	std::cout << str;
-	return i * i;
-}
-
-int main()
-{
-
-	ThreadPool pool(4);
-	std::vector< std::future<int> > results;
-
-	for (int i = 0; i < 8; ++i) {
-		results.emplace_back(
-			pool.enqueue(threadTask, i)
-		);
-	}
-
-	for (auto&& result : results)
-	{
-		std::string str = "result: " + std::to_string(result.get()) + "\n";
-		std::cout << str;
-	}
-
-	std::cout << std::endl;
-
-	return 0;
-}
-//////
