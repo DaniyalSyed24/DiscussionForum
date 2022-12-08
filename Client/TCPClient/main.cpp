@@ -5,20 +5,14 @@
 #include <chrono>
 #include <iostream>
 
-#include <iostream>
-#include <chrono>
-
 #include "TCPClient.h"
-#include <future>
 
 #define DEFAULT_PORT 12345
 
 
-
-//void randomFunction() {
-//	cout << "I just got executed!" << "\n";
-//}
-
+void randomFunction() {
+	std::cout << "I just got executed!" << "\n";
+}
 
 // generate a random number (0-9) to use as an index for getting TopicIDs.
 int randomNumberGenerator() {
@@ -29,7 +23,8 @@ std::string randomMessagesGenerator() {
 	return std::to_string(rand());
 }
 
-int main(int argc, char **argv, int posters, int readers, int time, int throttle) // added parameters
+
+int main(int argc, char** argv, int posters, int readers, int time, int throttle) // added parameters
 {
 	// Validate the parameters
 	if (argc != 6) {
@@ -54,7 +49,7 @@ int main(int argc, char **argv, int posters, int readers, int time, int throttle
 
 	//generate m poster threads and push them in the poster thread vector
 	for (int i = 0; i < numberOfPosterThreads; i++) {
-		posterThreadsVector.push_back(std::thread());
+		posterThreadsVector.push_back(std::thread(randomFunction));
 	}
 
 	//generate n reader threads and push them in the reader thread vector
@@ -63,12 +58,11 @@ int main(int argc, char **argv, int posters, int readers, int time, int throttle
 	}
 
 	// TESTING
-	//int test = posterThreadsVector.size();
-	//int test2 = readerThreadsVector.size();
+	int test = posterThreadsVector.size();
+	int test2 = readerThreadsVector.size();
 
-	//std::cout << "number of posters threads " << test << "\n";
-	//std::cout << "number of reader threads: " << test2;
-
+	std::cout << "number of posters threads " << test << "\n";
+	std::cout << "number of reader threads: " << test2;
 
 	//vector with Topic IDs
 	std::vector<std::string> topicIDs{ "Cars", "Aliens", "Skydiving", "Basketball", "Fencing", "Gaming", "Travel", "Science", "AI", "Bikes" };
@@ -87,36 +81,25 @@ int main(int argc, char **argv, int posters, int readers, int time, int throttle
 
 		std::cout << requestTopicMessage << "\n";
 
-		auto st = std::chrono::high_resolution_clock::now();
-
-		std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-			std::chrono::system_clock::now().time_since_epoch()
-			);
-
 	} while (std::chrono::system_clock::now() < finish);
 
 
+	do {
+		/*
+		request = "";
+		std::cout << "Enter string to send to server or \"exit\" (without quotes to terminate): ";
+		std::getline(std::cin, request);
 
-	/* ---------- READ REQUESTS BELOW ---------- */
+		std::cout << "String sent: " << request << std::endl;
+		std::cout << "Bytes sent: " << request.size() << std::endl;
 
+		std::string reply = client.send(request);
 
+		std::cout << "String returned: " << reply << std::endl;
+		std::cout << "Bytes received: " << reply.size() << std::endl;
+		*/
 
-	//do {
-	//	/*
-	//	request = "";
-	//	std::cout << "Enter string to send to server or \"exit\" (without quotes to terminate): ";
-	//	std::getline(std::cin, request);
-
-	//	std::cout << "String sent: " << request << std::endl;
-	//	std::cout << "Bytes sent: " << request.size() << std::endl;
-
-	//	std::string reply = client.send(request);
-
-	//	std::cout << "String returned: " << reply << std::endl;
-	//	std::cout << "Bytes received: " << reply.size() << std::endl;
-	//	*/
-
-	//} while (request != "exit" && request != "EXIT");
+	} while (request != "exit" && request != "EXIT");
 
 	client.CloseConnection();
 
