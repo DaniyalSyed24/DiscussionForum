@@ -4,8 +4,10 @@
 #include <ostream>
 #include <chrono>
 #include <iostream>
+#include <string>
 
 #include "TCPClient.h"
+#include "RequestGenerator.h"
 
 #define DEFAULT_PORT 12345
 
@@ -14,20 +16,10 @@ void randomFunction() {
 	std::cout << "I just got executed!" << "\n";
 }
 
-// generate a random number (0-9) to use as an index for getting TopicIDs.
-int randomNumberGenerator() {
-	return rand() % 10;
-}
-
-std::string randomMessagesGenerator() {
-	return std::to_string(rand());
-}
-
-
 int main(int argc, char** argv, int posters, int readers, int time, int throttle) // added parameters
 {
-	// Validate the parameters
-	if (argc != 6) {
+
+	if (argc != 6) { // validate the parameters
 		printf("usage: %s server-name|IP-address|Poster Threads|Reader Threads|Time|Throttle\n", argv[0]);
 		return 1;
 	}
@@ -36,7 +28,6 @@ int main(int argc, char** argv, int posters, int readers, int time, int throttle
 	std::string request;
 
 	client.OpenConnection();
-
 
 	int numberOfPosterThreads = std::stoi(argv[2]);
 	int numberOfReaderThreads = std::stoi(argv[3]);
@@ -49,7 +40,7 @@ int main(int argc, char** argv, int posters, int readers, int time, int throttle
 
 	//generate m poster threads and push them in the poster thread vector
 	for (int i = 0; i < numberOfPosterThreads; i++) {
-		posterThreadsVector.push_back(std::thread(randomFunction));
+		posterThreadsVector.push_back(std::thread());
 	}
 
 	//generate n reader threads and push them in the reader thread vector
@@ -58,34 +49,34 @@ int main(int argc, char** argv, int posters, int readers, int time, int throttle
 	}
 
 	// TESTING
-	int test = posterThreadsVector.size();
-	int test2 = readerThreadsVector.size();
+	//int test = posterThreadsVector.size();
+	//int test2 = readerThreadsVector.size();
+	//std::cout << "number of posters threads " << test << "\n";
+	//std::cout << "number of reader threads: " << test2;
 
-	std::cout << "number of posters threads " << test << "\n";
-	std::cout << "number of reader threads: " << test2;
 
-	//vector with Topic IDs
-	std::vector<std::string> topicIDs{ "Cars", "Aliens", "Skydiving", "Basketball", "Fencing", "Gaming", "Travel", "Science", "AI", "Bikes" };
+	RequestGenerator generator;
 
-	/* ---------- POST REQUESTS BELOW ---------- */
+	auto start = std::chrono::high_resolution_clock::now();	// start timer
 
-	//vector to store all random messages
-	std::vector<std::string> randomPostMessages;
+	while (true) // generate random strings for 1s
+	{
+		std::string randomString = generator.generateReadRequest();
 
-	auto finish = std::chrono::system_clock::now() + std::chrono::seconds{ 1 };
+		client.send(randomString);
+
+		auto end = std::chrono::high_resolution_clock::now(); // Check if 1s has elapsed
+		std::chrono::duration<double, std::milli> elapsed = end - start;
+
+		if (elapsed.count() >= 1000)
+		{
+			break;
+		}
+	}
+
+	/*
 	do {
 
-		std::string request = "POST@"; //add request
-		std::string requestTopic = request + topicIDs[randomNumberGenerator()] + "#"; //add topic
-		std::string requestTopicMessage = requestTopic + randomMessagesGenerator(); //add message
-
-		std::cout << requestTopicMessage << "\n";
-
-	} while (std::chrono::system_clock::now() < finish);
-
-
-	do {
-		/*
 		request = "";
 		std::cout << "Enter string to send to server or \"exit\" (without quotes to terminate): ";
 		std::getline(std::cin, request);
@@ -97,9 +88,10 @@ int main(int argc, char** argv, int posters, int readers, int time, int throttle
 
 		std::cout << "String returned: " << reply << std::endl;
 		std::cout << "Bytes received: " << reply.size() << std::endl;
-		*/
+
 
 	} while (request != "exit" && request != "EXIT");
+	*/
 
 	client.CloseConnection();
 

@@ -21,12 +21,18 @@
     <ClCompile Include="TCPClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RequestGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TCPClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Threadpool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
