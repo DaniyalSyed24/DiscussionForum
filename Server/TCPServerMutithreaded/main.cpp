@@ -53,8 +53,6 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 {
 	unsigned int socketIndex = (unsigned int) data.ClientSocket;
 
-	//std::map < std::string, std::vector<std::string> > Messages; // create a map to store all the POST IDs --> vector all the messages of that ID.
-
 	std::multimap<std::string, std::string> MessagesList; // create a map to store all the POST IDs in first. In second store all the messages.
 
 	do {
@@ -62,25 +60,16 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 
 		if (data.request != "" && data.request != "exit" && data.request != "EXIT")
 		{
-			std::cout << "[" << socketIndex << "] Bytes received: " << data.request.size() << std::endl;
-			std::cout << "[" << socketIndex << "] Data received: " << data.request << std::endl;
-
-			// remove the reverse string reply and replace with the request parser.
-
-			/* data.reply = data.request;
-			std::reverse(data.reply.begin(), data.reply.end());
-
-			server->sendReply(data); */
-
+			//std::cout << "[" << socketIndex << "] Bytes received: " << data.request.size() << std::endl;
+			//std::cout << "[" << socketIndex << "] Data received: " << data.request << std::endl;
 
 			// code from the request parser below
-
 			PostRequest post = PostRequest::parse(data.request);
 			if (post.valid)
 			{
-				std::cout << "Post request: " << post.toString() << std::endl;
-				std::cout << "Post topic: " << post.getTopicId() << std::endl;
-				std::cout << "Post message: " << post.getMessage() << std::endl;
+				//std::cout << "Post request: " << post.toString() << std::endl;
+				//std::cout << "Post topic: " << post.getTopicId() << std::endl;
+				//std::cout << "Post message: " << post.getMessage() << std::endl;
 
 				//Messages.insert(pair<std::string, std::vector<std::string>>());
 				//Messages.insert(pair<string, vector<string>>(post.getTopicId(), post.getMessage());
@@ -104,9 +93,9 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 			ReadRequest read = ReadRequest::parse(data.request);
 			if (read.valid)
 			{
-				std::cout << "Read request" << read.toString() << std::endl;
-				std::cout << "Read topic: " << read.getTopicId() << std::endl;
-				std::cout << "Read post id: " << read.getPostId() << std::endl;
+				//std::cout << "Read request" << read.toString() << std::endl;
+				//std::cout << "Read topic: " << read.getTopicId() << std::endl;
+				//std::cout << "Read post id: " << read.getPostId() << std::endl;
 
 				string topicID = read.getTopicId();
 				int i = -1; // so the first is 0.
@@ -126,8 +115,8 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 			CountRequest count = CountRequest::parse(data.request);
 			if (count.valid)
 			{
-				std::cout << "Count request: " << count.toString() << std::endl;
-				std::cout << "Count topic: " << count.getTopicId() << std::endl;
+				//std::cout << "Count request: " << count.toString() << std::endl;
+				//std::cout << "Count topic: " << count.getTopicId() << std::endl;
 
 				data.reply = to_string(MessagesList.count(count.getTopicId()));
 
@@ -138,7 +127,7 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 			ListRequest list = ListRequest::parse(data.request);
 			if (list.valid)
 			{
-				std::cout << "List request: " << list.toString() << std::endl;
+				//std::cout << "List request: " << list.toString() << std::endl;
 
 				string listOfMessages;
 
