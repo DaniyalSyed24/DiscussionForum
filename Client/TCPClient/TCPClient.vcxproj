@@ -111,9 +111,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="RequestGenerator.cpp" />
     <ClCompile Include="TCPClient.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="RequestGenerator.h" />
     <ClInclude Include="TCPClient.h" />
     <ClInclude Include="Threadpool.h" />
   </ItemGroup>
