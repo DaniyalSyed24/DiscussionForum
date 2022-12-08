@@ -78,22 +78,27 @@ int main(int argc, char **argv, int posters, int readers, int time, int throttle
 	//vector to store all random messages
 	std::vector<std::string> randomPostMessages;
 
+	auto finish = std::chrono::system_clock::now() + std::chrono::seconds{ 1 };
+	do {
 
-	for (int i = 0; i < 10; i++) {
 		std::string request = "POST@"; //add request
 		std::string requestTopic = request + topicIDs[randomNumberGenerator()] + "#"; //add topic
 		std::string requestTopicMessage = requestTopic + randomMessagesGenerator(); //add message
 
-		randomPostMessages.push_back(requestTopicMessage); //push full post request to the vector
-	}
-	
-	//generate random POST messages
-	int i = 0;
-	while (i < randomPostMessages.size()) {
-		request = randomPostMessages[i];
-		client.send(request);
-		i++;
-	}
+		std::cout << requestTopicMessage << "\n";
+
+		auto st = std::chrono::high_resolution_clock::now();
+
+		std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+			std::chrono::system_clock::now().time_since_epoch()
+			);
+
+	} while (std::chrono::system_clock::now() < finish);
+
+
+
+	/* ---------- READ REQUESTS BELOW ---------- */
+
 
 
 	//do {
