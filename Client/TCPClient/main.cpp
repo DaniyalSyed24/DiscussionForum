@@ -48,31 +48,50 @@ int main(int argc, char** argv, int posters, int readers, int time, int throttle
 		readerThreadsVector.push_back(std::thread());
 	}
 
-	// TESTING
+	// TESTING Threads connection
 	//int test = posterThreadsVector.size();
 	//int test2 = readerThreadsVector.size();
 	//std::cout << "number of posters threads " << test << "\n";
 	//std::cout << "number of reader threads: " << test2;
 
 
-	RequestGenerator generator;
-
-	auto start = std::chrono::high_resolution_clock::now();	// start timer
-
-	while (true) // generate random strings for 1s
+	auto startMain = std::chrono::high_resolution_clock::now();	// start timer of 10seconds
+	int i = 0;
+	while (true)
 	{
-		std::string randomString = generator.generateReadRequest();
+		std::vector<std::string> listOfStrings;
+		RequestGenerator generator;
 
-		client.send(randomString);
+		auto start = std::chrono::high_resolution_clock::now();	// start timer
 
-		auto end = std::chrono::high_resolution_clock::now(); // Check if 1s has elapsed
-		std::chrono::duration<double, std::milli> elapsed = end - start;
+		while (true) // generate random strings for 1s
+		{
+			std::string randomString = generator.generatePostRequest();
 
-		if (elapsed.count() >= 1000)
+			listOfStrings.push_back(randomString);
+			client.send(randomString);
+
+			auto end = std::chrono::high_resolution_clock::now(); // Check if 1s has elapsed
+			std::chrono::duration<double, std::milli> elapsed = end - start;
+			if (elapsed.count() >= 1000)
+			{
+				break;
+			}
+		}
+
+		i++;
+		std::cout << "Second " << i <<  ": " << listOfStrings.size() << " requests" << "\n";
+
+		auto endMain = std::chrono::high_resolution_clock::now(); // Check if 10s has elapsed
+		std::chrono::duration<double, std::milli> elapsedMain = endMain - startMain;
+		if (elapsedMain.count() >= 10000)
 		{
 			break;
 		}
 	}
+	
+
+
 
 	/*
 	do {
