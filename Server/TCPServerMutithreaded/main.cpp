@@ -4,7 +4,6 @@
 #include <thread>
 #include <vector>
 #include <map>
-
 #include <string>
 
 #include "config.h"
@@ -71,20 +70,12 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 				//std::cout << "Post topic: " << post.getTopicId() << std::endl;
 				//std::cout << "Post message: " << post.getMessage() << std::endl;
 
-				//Messages.insert(pair<std::string, std::vector<std::string>>());
-				//Messages.insert(pair<string, vector<string>>(post.getTopicId(), post.getMessage());
-
 				MessagesList.insert(pair<std::string, std::string>(post.getTopicId(), post.getMessage()));
 
 				string topicID = post.getTopicId();
-				int j = 0;
 
-				for (auto i = MessagesList.begin(); i != MessagesList.end(); i++) {
-					if (i->first == topicID) {
-						data.reply = to_string(j);;
-						j++;
-					}
-				}
+				int j = MessagesList.count(topicID)-1;
+				data.reply = to_string(j);
 
 				server->sendReply(data);
 				continue;
@@ -109,7 +100,6 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 				}
 				server->sendReply(data);
 				continue;
-
 			}
 
 			CountRequest count = CountRequest::parse(data.request);
@@ -131,15 +121,10 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 
 				string listOfMessages;
 
-				//for (auto i = MessagesList.begin(); i != MessagesList.end(); i++) {
-				//	listOfMessages = listOfMessages + i->first;
-				//}
-
 				for (auto i = MessagesList.begin(); i != MessagesList.end(); i = MessagesList.upper_bound(i->first)) {
 					listOfMessages = listOfMessages + i->first + "#";
 				}
 				listOfMessages = listOfMessages.substr(0, listOfMessages.size() - 1);
-
 				data.reply = listOfMessages;
 
 				server->sendReply(data);
