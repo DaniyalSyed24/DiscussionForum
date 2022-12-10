@@ -9,6 +9,7 @@
 
 #include "TCPClient.h"
 #include "RequestGenerator.h"
+#include <list>
 
 #define DEFAULT_PORT 12345
 
@@ -19,7 +20,8 @@ void randomFunction() {
 
 std::string serverIP = "127.0.0.1";
 
-std::multimap<int, int> totalMessagesPerThread;
+std::multimap<int, int> totalMessagesPerPostThread;
+std::multimap<int, int> totalMessagesPerReadThread;
 
 void PostRequest(int threadId)
 {
@@ -28,18 +30,24 @@ void PostRequest(int threadId)
 	TCPClient client(serverIP, DEFAULT_PORT);
 	client.OpenConnection();
 
+	int itr = 0;
+
 	// generate POST requests for 1 second 10 times.
 	auto startMain = std::chrono::high_resolution_clock::now();	// start timer of 10 seconds
 	while (true)
 	{
 		RequestGenerator postGenerator;
+		std::list<int> totalMessagesPerSecond;
 
 		auto start = std::chrono::high_resolution_clock::now();	// start timer of 1 second
 		while (true) // generate random strings for 1s
 		{
 			std::string randomString = postGenerator.generatePostRequest();
 			client.send(randomString);
-			totalMessagesPerThread.emplace(threadId, 1);
+
+			totalMessagesPerPostThread.emplace(threadId, 1);
+			totalMessagesPerSecond.push_back(1);	
+
 
 			auto end = std::chrono::high_resolution_clock::now(); // Check if 1s has elapsed, if yes -> break
 			std::chrono::duration<double, std::milli> elapsed = end - start;
@@ -48,6 +56,9 @@ void PostRequest(int threadId)
 				break;
 			}
 		}
+
+		//std::cout << "Second " << itr << ": " << totalMessagesPerSecond.size() << "\n";
+		itr++;
 
 		auto endMain = std::chrono::high_resolution_clock::now(); // Check if 10s has elapsed, if yes -> break
 		std::chrono::duration<double, std::milli> elapsedMain = endMain - startMain;
@@ -59,7 +70,52 @@ void PostRequest(int threadId)
 	client.CloseConnection();
 }
 
-void ReadRequest(int threadId) {}
+void ReadRequest(int threadId)
+{
+	//std::cout << "Thread " << threadId << " sent: " << std::endl;
+	// open TCP connection
+	TCPClient client(serverIP, DEFAULT_PORT);
+	client.OpenConnection();
+
+	int itr = 0;
+
+	// generate READ requests for 1 second 10 times.
+	auto startMain = std::chrono::high_resolution_clock::now();	// start timer of 10 seconds
+	while (true)
+	{
+		RequestGenerator readGenerator;
+		std::list<int> totalMessagesPerSecond;
+
+		auto start = std::chrono::high_resolution_clock::now();	// start timer of 1 second
+		while (true) // generate random strings for 1s
+		{
+			std::string randomString = readGenerator.generateReadRequest();
+			client.send(randomString);
+
+			totalMessagesPerReadThread.emplace(threadId, 1);
+			totalMessagesPerSecond.push_back(1);
+
+
+			auto end = std::chrono::high_resolution_clock::now(); // Check if 1s has elapsed, if yes -> break
+			std::chrono::duration<double, std::milli> elapsed = end - start;
+			if (elapsed.count() >= 1000)
+			{
+				break;
+			}
+		}
+
+		//std::cout << "Second " << itr << ": " << totalMessagesPerSecond.size() << "\n";
+		itr++;
+
+		auto endMain = std::chrono::high_resolution_clock::now(); // Check if 10s has elapsed, if yes -> break
+		std::chrono::duration<double, std::milli> elapsedMain = endMain - startMain;
+		if (elapsedMain.count() >= 10000)
+		{
+			break;
+		}
+	}
+	client.CloseConnection();
+}
 
 int main(int argc, char** argv, int posters, int readers, int time, int throttle) // added parameters
 {
@@ -86,27 +142,51 @@ int main(int argc, char** argv, int posters, int readers, int time, int throttle
 
 	//generate n reader threads and push them in the reader thread vector
 	for (int i = 0; i < numberOfReaderThreads; i++) {
-		readerThreadsVector.push_back(std::thread());
+		readerThreadsVector.push_back(std::thread(ReadRequest, i));
 	}
 
 	// Wait for all threads to finish
 	for (auto& thread : posterThreadsVector) {
 		thread.join();
 	}
-	// Print out the number of messages sent by each thread
-	for (int i = 0; i < numberOfPosterThreads; i++)
-	{
-		std::cout << "Total poster requests of Thread " << i << " are: " << totalMessagesPerThread.count(i) << "\n";
+	for (auto& thread : readerThreadsVector) {
+		thread.join();
 	}
+
+	// Print out the number of messages sent by each thread
+	for (int i = 0; i < numberOfPosterThreads; i++){
+		std::cout << "The average requests of POST Thread " << i << " is: " << totalMessagesPerPostThread.count(i)/10 << "\n";
+	}
+	// Print out the number of messages sent by each thread
+	for (int i = 0; i < numberOfReaderThreads; i++){
+		std::cout << "The average requests of READ Thread " << i << " is: " << totalMessagesPerReadThread.count(i) / 10 << "\n";
+	}
+	std::cout << "\n";
 
 	int totalPosterRequests = 0;
-	for (int i = 0; i < numberOfPosterThreads; i++)
-	{
-		totalPosterRequests = totalPosterRequests + totalMessagesPerThread.count(i);
+	for (int i = 0; i < numberOfPosterThreads; i++){
+		totalPosterRequests = totalPosterRequests + totalMessagesPerPostThread.count(i);
 	}
-	std::cout << "Total poster requests: " << totalPosterRequests << ".\n";
-	std::cout << "Average requests per poster Thread: " << totalPosterRequests / numberOfPosterThreads << ".\n";
+	int averagePostReq = totalPosterRequests / numberOfPosterThreads;
 
+	std::cout << "Total poster requests: " << totalPosterRequests << ".\n";
+	std::cout << "Average requests per poster Thread: " << averagePostReq << ".\n";
+
+	int totalReaderRequests = 0;
+	for (int i = 0; i < numberOfReaderThreads; i++){
+		totalReaderRequests = totalReaderRequests + totalMessagesPerReadThread.count(i);
+	}
+	int averageReadReq = totalReaderRequests / numberOfReaderThreads;
+
+	std::cout << "Total reader requests: " << totalReaderRequests << ".\n";
+	std::cout << "Average requests per reader Thread: " << averageReadReq << ".\n";
+
+	int totalRequests = totalPosterRequests + totalReaderRequests;
+	int averageReqPerThread = (averagePostReq + averageReadReq) / 2;
+
+	std::cout << "Total requests: " << totalRequests << ".\n";
+	std::cout << "Average resquests per thread: " << averageReqPerThread << ".\n";
+	std::cout << "Average requests per thread per second:" << "TBD" << ".\n";
 
 
 	do {
