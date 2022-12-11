@@ -5,14 +5,12 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <regex>
 
 #include "config.h"
 #include "TCPServer.h"
 #include "TCPClient.h"
 #include "RequestParser.h"
-#include <regex>
-
-using namespace std;
 
 #define DEFAULT_PORT 12345
 
@@ -70,12 +68,13 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 				//std::cout << "Post topic: " << post.getTopicId() << std::endl;
 				//std::cout << "Post message: " << post.getMessage() << std::endl;
 
-				MessagesList.insert(pair<std::string, std::string>(post.getTopicId(), post.getMessage()));
+				std::string topicID = post.getTopicId();
+				std::string message = post.getMessage();
 
-				string topicID = post.getTopicId();
+				MessagesList.emplace(topicID, message);
 
-				int j = MessagesList.count(topicID)-1;
-				data.reply = to_string(j);
+				int j = MessagesList.count(topicID) - 1;
+				data.reply = std::to_string(j);
 
 				server->sendReply(data);
 				continue;
@@ -88,7 +87,7 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 				//std::cout << "Read topic: " << read.getTopicId() << std::endl;
 				//std::cout << "Read post id: " << read.getPostId() << std::endl;
 
-				string topicID = read.getTopicId();
+				std::string topicID = read.getTopicId();
 				int i = -1; // so the first is 0.
 				for (auto iterator = MessagesList.begin(); iterator != MessagesList.end(); iterator++) { // iterate through the multimap to find the right ID. Within the ID, find the right message
 					if (iterator->first == topicID) {
@@ -108,7 +107,7 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 				//std::cout << "Count request: " << count.toString() << std::endl;
 				//std::cout << "Count topic: " << count.getTopicId() << std::endl;
 
-				data.reply = to_string(MessagesList.count(count.getTopicId()));
+				data.reply = std::to_string(MessagesList.count(count.getTopicId()));
 
 				server->sendReply(data);
 				continue;
@@ -119,7 +118,7 @@ void serverThreadFunction(TCPServer* server, ReceivedSocketData && data)
 			{
 				//std::cout << "List request: " << list.toString() << std::endl;
 
-				string listOfMessages;
+				std::string listOfMessages;
 
 				for (auto i = MessagesList.begin(); i != MessagesList.end(); i = MessagesList.upper_bound(i->first)) {
 					listOfMessages = listOfMessages + i->first + "#";
