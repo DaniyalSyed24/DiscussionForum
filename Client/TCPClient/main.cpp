@@ -22,6 +22,10 @@ std::string serverIP = "127.0.0.1";
 
 std::multimap<int, int> totalMessagesPerPostThread;
 std::multimap<int, int> totalMessagesPerReadThread;
+std::multimap<int, int> requestsPerSecondList;
+std::multimap<int, int> readRequestsPerSecondList;
+
+int itr = 0;
 
 void PostRequest(int threadId)
 {
@@ -30,24 +34,23 @@ void PostRequest(int threadId)
 	TCPClient client(serverIP, DEFAULT_PORT);
 	client.OpenConnection();
 
-	int itr = 0;
-
 	// generate POST requests for 1 second 10 times.
 	auto startMain = std::chrono::high_resolution_clock::now();	// start timer of 10 seconds
 	while (true)
 	{
 		RequestGenerator postGenerator;
 		std::list<int> totalMessagesPerSecond;
+		int numOfReqSent = 0;
 
 		auto start = std::chrono::high_resolution_clock::now();	// start timer of 1 second
 		while (true) // generate random strings for 1s
 		{
 			std::string randomString = postGenerator.generatePostRequest();
 			client.send(randomString);
+			numOfReqSent++;
 
 			totalMessagesPerPostThread.emplace(threadId, 1);
 			totalMessagesPerSecond.push_back(1);	
-
 
 			auto end = std::chrono::high_resolution_clock::now(); // Check if 1s has elapsed, if yes -> break
 			std::chrono::duration<double, std::milli> elapsed = end - start;
@@ -56,14 +59,12 @@ void PostRequest(int threadId)
 				break;
 			}
 		}
-
-		//std::cout << "Second " << itr << ": " << totalMessagesPerSecond.size() << "\n";
+		requestsPerSecondList.insert(std::pair<int, int>(itr, numOfReqSent));
 		itr++;
 
 		auto endMain = std::chrono::high_resolution_clock::now(); // Check if 10s has elapsed, if yes -> break
 		std::chrono::duration<double, std::milli> elapsedMain = endMain - startMain;
-		if (elapsedMain.count() >= 10000)
-		{
+		if (elapsedMain.count() >= 10000){
 			break;
 		}
 	}
@@ -72,12 +73,9 @@ void PostRequest(int threadId)
 
 void ReadRequest(int threadId)
 {
-	//std::cout << "Thread " << threadId << " sent: " << std::endl;
 	// open TCP connection
 	TCPClient client(serverIP, DEFAULT_PORT);
 	client.OpenConnection();
-
-	int itr = 0;
 
 	// generate READ requests for 1 second 10 times.
 	auto startMain = std::chrono::high_resolution_clock::now();	// start timer of 10 seconds
@@ -85,12 +83,14 @@ void ReadRequest(int threadId)
 	{
 		RequestGenerator readGenerator;
 		std::list<int> totalMessagesPerSecond;
+		int numOfReqSent = 0;
 
 		auto start = std::chrono::high_resolution_clock::now();	// start timer of 1 second
 		while (true) // generate random strings for 1s
 		{
 			std::string randomString = readGenerator.generateReadRequest();
 			client.send(randomString);
+			numOfReqSent++;
 
 			totalMessagesPerReadThread.emplace(threadId, 1);
 			totalMessagesPerSecond.push_back(1);
@@ -103,8 +103,7 @@ void ReadRequest(int threadId)
 				break;
 			}
 		}
-
-		//std::cout << "Second " << itr << ": " << totalMessagesPerSecond.size() << "\n";
+		readRequestsPerSecondList.insert(std::pair<int, int>(itr, numOfReqSent));
 		itr++;
 
 		auto endMain = std::chrono::high_resolution_clock::now(); // Check if 10s has elapsed, if yes -> break
@@ -153,13 +152,60 @@ int main(int argc, char** argv, int posters, int readers, int time, int throttle
 		thread.join();
 	}
 
-	// Print out the number of messages sent by each thread
-	for (int i = 0; i < numberOfPosterThreads; i++){
-		std::cout << "The average requests of POST Thread " << i << " is: " << totalMessagesPerPostThread.count(i)/10 << "\n";
+	// Print out the messages sent by each thread
+	std::multimap<int, int>::iterator it = requestsPerSecondList.begin(); // Set the starting iterator to the beginning of the multimap
+	int postCounter = 0;
+
+	while (it != requestsPerSecondList.end()) 	// Loop until we reach the end of the multimap
+	{
+		// Iterate through the next 10 key-value pairs in the multimap
+		std::cout << "POST thread " << postCounter << " sent:" << "\n";
+		int count = -1;
+		int messagesPerSecond = 0;
+		std::string whiteSpace = "        ";
+
+		while (it != requestsPerSecondList.end() && count < 9)
+		{
+			int key = it->first;
+			int value = it->second;
+
+			std::cout << whiteSpace << "Second: " << count+1 << " : " << value << " requests." << "\n";
+
+			it++;
+			count++;
+			messagesPerSecond = messagesPerSecond + value;
+		}
+		int avgMsgPerSecond = messagesPerSecond / 10;
+		std::cout << whiteSpace << "Average: " << avgMsgPerSecond << " requests." << "\n";
+		postCounter++;
 	}
+
 	// Print out the number of messages sent by each thread
-	for (int i = 0; i < numberOfReaderThreads; i++){
-		std::cout << "The average requests of READ Thread " << i << " is: " << totalMessagesPerReadThread.count(i) / 10 << "\n";
+	std::multimap<int, int>::iterator rit = readRequestsPerSecondList.begin(); // Set the starting iterator to the beginning of the multimap
+	int readCounter = 0;
+
+	while (rit != readRequestsPerSecondList.end()) 	// Loop until we reach the end of the multimap
+	{
+		// Iterate through the next 10 key-value pairs in the multimap
+		std::cout << "READ thread " << readCounter << " sent:" << "\n";
+		int count = -1;
+		int messagesPerSecond = 0;
+		std::string whiteSpace = "        ";
+
+		while (rit != readRequestsPerSecondList.end() && count < 9)
+		{
+			int key = rit->first;
+			int value = rit->second;
+
+			std::cout << whiteSpace << "Second: " << count + 1 << " : " << value << " requests." << "\n";
+
+			rit++;
+			count++;
+			messagesPerSecond = messagesPerSecond + value;
+		}
+		int avgMsgPerSecond = messagesPerSecond / 10;
+		std::cout << whiteSpace << "Average: " << avgMsgPerSecond << " requests." << "\n";
+		readCounter++;
 	}
 	std::cout << "\n";
 
@@ -186,23 +232,10 @@ int main(int argc, char** argv, int posters, int readers, int time, int throttle
 
 	std::cout << "Total requests: " << totalRequests << ".\n";
 	std::cout << "Average resquests per thread: " << averageReqPerThread << ".\n";
-	std::cout << "Average requests per thread per second:" << "TBD" << ".\n";
+	std::cout << "Average requests per thread per second:" << averageReqPerThread/10 << ".\n";
 
 
 	do {
-		/*
-		request = "";
-		std::cout << "Enter string to send to server or \"exit\" (without quotes to terminate): ";
-		std::getline(std::cin, request);
-
-		std::cout << "String sent: " << request << std::endl;
-		std::cout << "Bytes sent: " << request.size() << std::endl;
-
-		std::string reply = client.send(request);
-
-		std::cout << "String returned: " << reply << std::endl;
-		std::cout << "Bytes received: " << reply.size() << std::endl;
-		*/
 
 	} while (request != "exit" && request != "EXIT");
 
