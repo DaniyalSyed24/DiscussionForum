@@ -23,6 +23,8 @@ std::string serverIP = "127.0.0.1";
 std::multimap<int, int> totalMessagesPerPostThread;
 std::multimap<int, int> totalMessagesPerReadThread;
 std::multimap<int, int> requestsPerSecondList;
+std::multimap<int, int> readRequestsPerSecondList;
+
 int itr = 0;
 
 void PostRequest(int threadId)
@@ -71,12 +73,9 @@ void PostRequest(int threadId)
 
 void ReadRequest(int threadId)
 {
-	//std::cout << "Thread " << threadId << " sent: " << std::endl;
 	// open TCP connection
 	TCPClient client(serverIP, DEFAULT_PORT);
 	client.OpenConnection();
-
-	int itr = 0;
 
 	// generate READ requests for 1 second 10 times.
 	auto startMain = std::chrono::high_resolution_clock::now();	// start timer of 10 seconds
@@ -84,12 +83,14 @@ void ReadRequest(int threadId)
 	{
 		RequestGenerator readGenerator;
 		std::list<int> totalMessagesPerSecond;
+		int numOfReqSent = 0;
 
 		auto start = std::chrono::high_resolution_clock::now();	// start timer of 1 second
 		while (true) // generate random strings for 1s
 		{
 			std::string randomString = readGenerator.generateReadRequest();
 			client.send(randomString);
+			numOfReqSent++;
 
 			totalMessagesPerReadThread.emplace(threadId, 1);
 			totalMessagesPerSecond.push_back(1);
@@ -102,8 +103,7 @@ void ReadRequest(int threadId)
 				break;
 			}
 		}
-
-		//std::cout << "Second " << itr << ": " << totalMessagesPerSecond.size() << "\n";
+		readRequestsPerSecondList.insert(std::pair<int, int>(itr, numOfReqSent));
 		itr++;
 
 		auto endMain = std::chrono::high_resolution_clock::now(); // Check if 10s has elapsed, if yes -> break
@@ -154,12 +154,12 @@ int main(int argc, char** argv, int posters, int readers, int time, int throttle
 
 	// Print out the messages sent by each thread
 	std::multimap<int, int>::iterator it = requestsPerSecondList.begin(); // Set the starting iterator to the beginning of the multimap
-	int counter = 0;
+	int postCounter = 0;
 
 	while (it != requestsPerSecondList.end()) 	// Loop until we reach the end of the multimap
 	{
 		// Iterate through the next 10 key-value pairs in the multimap
-		std::cout << "POST thread " << counter << " sent:" << "\n";
+		std::cout << "POST thread " << postCounter << " sent:" << "\n";
 		int count = -1;
 		int messagesPerSecond = 0;
 		std::string whiteSpace = "        ";
@@ -177,12 +177,35 @@ int main(int argc, char** argv, int posters, int readers, int time, int throttle
 		}
 		int avgMsgPerSecond = messagesPerSecond / 10;
 		std::cout << whiteSpace << "Average: " << avgMsgPerSecond << " requests." << "\n";
-		counter++;
+		postCounter++;
 	}
 
 	// Print out the number of messages sent by each thread
-	for (int i = 0; i < numberOfReaderThreads; i++){
-		std::cout << "The average requests of READ Thread " << i << " is: " << totalMessagesPerReadThread.count(i) / 10 << "\n";
+	std::multimap<int, int>::iterator rit = readRequestsPerSecondList.begin(); // Set the starting iterator to the beginning of the multimap
+	int readCounter = 0;
+
+	while (rit != readRequestsPerSecondList.end()) 	// Loop until we reach the end of the multimap
+	{
+		// Iterate through the next 10 key-value pairs in the multimap
+		std::cout << "READ thread " << readCounter << " sent:" << "\n";
+		int count = -1;
+		int messagesPerSecond = 0;
+		std::string whiteSpace = "        ";
+
+		while (rit != readRequestsPerSecondList.end() && count < 9)
+		{
+			int key = rit->first;
+			int value = rit->second;
+
+			std::cout << whiteSpace << "Second: " << count + 1 << " : " << value << " requests." << "\n";
+
+			rit++;
+			count++;
+			messagesPerSecond = messagesPerSecond + value;
+		}
+		int avgMsgPerSecond = messagesPerSecond / 10;
+		std::cout << whiteSpace << "Average: " << avgMsgPerSecond << " requests." << "\n";
+		readCounter++;
 	}
 	std::cout << "\n";
 
